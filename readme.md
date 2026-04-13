@@ -5,7 +5,7 @@
 We currently run 30+ application workloads across on-prem servers and have 40+ pipeline jobs sitting in Databricks that get deployed by hand with no automated testing. Across 25+ repos this has become pretty hard to manage consistently.
 
 The main gaps are:
-- No cloud-native application platform — on-prem schedulers are fragile and can't scale
+- No cloud-native application platform - on-prem schedulers are fragile and can't scale
 - Databricks deployments are manual, error-prone, and there's no standard process across teams
 - The compute estate is a mix of container instances, VMs, and on-prem servers with no unified operating model
 
@@ -34,20 +34,20 @@ Three streams, run in sequence:
 - Get baseline governance in place on Azure: OPA via Spacelift or Gatekeeper, RBAC, cluster standards, network policies
 - Define the release and deployment strategy using Conventional Commits and semantic versioning
 - Build Golden Container Images (Alpine Distroless base) shared across all repos
-- Define the testing strategy: unit, component, integration, data validation — reusable workflows
+- Define the testing strategy: unit, component, integration, data validation - reusable workflows
 
 ### Phase 2 and 3: Build Platform Foundation
 - Bootstrap Azure Landing Zones: CIDR planning, Management Groups, IAM for runner infra
 - Build Hub and Spoke VNet topology, WAF, DNS registry, runner infra
 - Deploy observability: Azure Monitor and Grafana
-- Provision AKS clusters (Dev/Stg/Prod) via IaC (Pulumi or Terraform) — NSGs, Key Vaults, App Config, Managed Identities
+- Provision AKS clusters (Dev/Stg/Prod) via IaC (Pulumi or Terraform) - NSGs, Key Vaults, App Config, Managed Identities
 - Bootstrap Argo CD onto each cluster from the Platform Monorepo
 - Build reusable deployment templates: app deploy, KSM secrets, feature flags, runbooks
 - Set up the CI/CD template for Databricks
 
 ### Phase 4 and 5: Start Migration (On-Prem to Cloud)
 - Start with 2-3 low-risk apps to validate AKS networking and GitOps flow
-- Prefer already-containerised workloads first — less re-architecting
+- Prefer already-containerised workloads first - less re-architecting
 - Test deployment strategies: Rolling, Blue/Green, Canary, Load Balanced (L4/L7)
 - Add approval gates and automated testing gates to the infra pipeline
 - Automate the most critical Databricks jobs
@@ -244,7 +244,7 @@ Environment promotion:
 
 ![Generic Deployment Lifecycle](images/lifecycle.jpg)
 
-Same flow for all workloads — AKS services and Databricks pipelines.
+Same flow for all workloads - AKS services and Databricks pipelines.
 
 On a branch (PR): run tests, linting, build image. Don't deploy.
 
@@ -298,7 +298,7 @@ The Databricks Control Plane is managed SaaS (Workspace UI, Jobs, Notebooks, RES
 The Azure subscription (org-owned) per environment (Dev/Stg/Prod) contains:
 - VNet with Databricks subnets via VNet Injection (Driver VM, Worker VMs, Spark job execution)
 - NAT Gateway / Firewall for controlled egress
-- Data and service layer: ADLS/Blob, Cosmos/SQL, Key Vault, event streaming — all accessed via Private Endpoints, RBAC, and Managed Identities
+- Data and service layer: ADLS/Blob, Cosmos/SQL, Key Vault, event streaming - all accessed via Private Endpoints, RBAC, and Managed Identities
 
 Ownership split:
 

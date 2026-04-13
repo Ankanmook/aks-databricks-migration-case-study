@@ -255,7 +255,7 @@ On PR approval:
 4. Component tests passed
 
 On merge to `main`:
-1. Version calculated via Conventional Commits
+1. Version calculated via [Conventional Commits](https://www.conventionalcommits.org/) and semantic versioning
 2. Immutable artifact built
 3. Tagged (e.g. `v1.4.2`)
 4. Artifact published to ACR / package registry / bundle store

@@ -1,16 +1,15 @@
-# AKS & Databricks Migration — Case Study
+# AKS and Databricks Migration Case Study
 
 ## Problem Statement
 
-The organisation currently operates **30+ application workloads** across on-premises servers and maintains **40+ pipeline jobs** on Databricks with manual code uploads and no automated testing. Across **25+ repositories**, the engineering organisation lacks:
+We currently run 30+ application workloads across on-prem servers and have 40+ pipeline jobs sitting in Databricks that get deployed by hand with no automated testing. Across 25+ repos this has become pretty hard to manage consistently.
 
-| Gap | Impact |
-|---|---|
-| No cloud-native application platform | Cannot scale, lacks HA, and on-prem schedulers are fragile |
-| Manual Databricks deployments | Error-prone releases, no testing gates, inconsistent environments |
-| Mixed compute estate | Container instances, legacy VMs, on-prem servers — no unified operating model |
+The main gaps are:
+- No cloud-native application platform — on-prem schedulers are fragile and can't scale
+- Databricks deployments are manual, error-prone, and there's no standard process across teams
+- The compute estate is a mix of container instances, VMs, and on-prem servers with no unified operating model
 
-This case study proposes a structured migration to **Azure Kubernetes Service (AKS)** and an **automated Databricks CI/CD platform**, underpinned by GitOps principles and Infrastructure as Code.
+The plan is to migrate everything to AKS and build a proper Databricks CI/CD setup, both built on GitOps and IaC from the start.
 
 ---
 
@@ -18,13 +17,11 @@ This case study proposes a structured migration to **Azure Kubernetes Service (A
 
 ![Migration Operating Model](images/majorstreamoperatingmodel.jpg)
 
-The migration is organised into three sequential operating streams, each delivering distinct outcomes:
+Three streams, run in sequence:
 
-| Stream | Goal |
-|---|---|
-| **Platform Foundation** | Build Dev/Stg/Prod environments and a GitOps backbone on AKS |
-| **Databricks Automation** | Eliminate manual uploads and establish a data pipeline release process for all 40+ jobs |
-| **Workload Migration** | Move applications in waves from on-prem / mixed compute to AKS |
+1. **Platform Foundation** - build out Dev/Stg/Prod on AKS with a GitOps backbone
+2. **Databricks Automation** - eliminate manual uploads, get all 40+ jobs on a proper release process
+3. **Workload Migration** - move apps in waves from on-prem and mixed compute
 
 ---
 
@@ -32,58 +29,56 @@ The migration is organised into three sequential operating streams, each deliver
 
 ![Product Roadmap](images/productroadmap.jpg)
 
-The full programme spans seven phases:
+### Phase 1: Discovery and Assessment
+- Lock down naming conventions (workload, service, zone, environment, instance)
+- Get baseline governance in place on Azure: OPA via Spacelift or Gatekeeper, RBAC, cluster standards, network policies
+- Define the release and deployment strategy using Conventional Commits and semantic versioning
+- Build Golden Container Images (Alpine Distroless base) shared across all repos
+- Define the testing strategy: unit, component, integration, data validation — reusable workflows
 
-### Phase 1 — Discovery & Assessment
-- Standardise naming conventions: workload, service, zone, environment, instance
-- Establish baseline governance policies on Azure: OPA (Spacelift/Gatekeeper), RBAC, cluster standards, network policies
-- Define Release & Deployment Strategy using Conventional Commits and semantic versioning
-- Create Golden Container Images — Alpine Distroless base images shared across 25+ repositories
-- Define reusable testing strategy: unit, component, integration, and data validation workflows
+### Phase 2 and 3: Build Platform Foundation
+- Bootstrap Azure Landing Zones: CIDR planning, Management Groups, IAM for runner infra
+- Build Hub and Spoke VNet topology, WAF, DNS registry, runner infra
+- Deploy observability: Azure Monitor and Grafana
+- Provision AKS clusters (Dev/Stg/Prod) via IaC (Pulumi or Terraform) — NSGs, Key Vaults, App Config, Managed Identities
+- Bootstrap Argo CD onto each cluster from the Platform Monorepo
+- Build reusable deployment templates: app deploy, KSM secrets, feature flags, runbooks
+- Set up the CI/CD template for Databricks
 
-### Phase 2 & 3 — Build Platform Foundation
-- Bootstrap Azure Landing Zones: CIDR planning, Management Groups, IAM for self-hosted runner infra
-- Build Hub & Spoke VNet topology with WAF, DNS registry, and runner infrastructure
-- Deploy Observability layer: Azure Monitor + Grafana
-- Provision AKS clusters (Dev/Stg/Prod) via IaC (Pulumi/Terraform): NSGs, Key Vaults, App Config, Managed Identities
-- Bootstrap GitOps (Argo CD) onto each cluster from the Platform Monorepo
-- Create reusable deployment templates: application deploy, KSM secrets workflows, feature flags, ad-hoc runbooks
-- Set up CI/CD template for Databricks
-
-### Phase 4 & 5 — Begin Migration (On-Prem → Cloud)
-- Migrate 2–3 low-risk apps to prove out AKS networking and GitOps flow
-- Prefer already-containerised workloads first for lower friction
+### Phase 4 and 5: Start Migration (On-Prem to Cloud)
+- Start with 2-3 low-risk apps to validate AKS networking and GitOps flow
+- Prefer already-containerised workloads first — less re-architecting
 - Test deployment strategies: Rolling, Blue/Green, Canary, Load Balanced (L4/L7)
-- Add infra deployment pipeline approval gates and automated testing gates
+- Add approval gates and automated testing gates to the infra pipeline
 - Automate the most critical Databricks jobs
 
-### Phase 6 — Mass Migration
-- Migrate remaining 25+ on-prem applications in waves
+### Phase 6: Mass Migration
+- Migrate the remaining 25+ on-prem apps in waves
 - Consolidate all Container Instances into AKS
 - Full automation of all 40+ Databricks pipelines
-- Progressive decommissioning of on-prem servers after a stability soak window
+- Progressively decommission on-prem servers after a stability soak window
 
-### Phase 7 — Optimisation
-- Implement HPA (Horizontal Pod Autoscaler) across services
-- Self-Service Platform for application teams
-- FinOps: cost controls, right-sizing, operation cost optimisation
-- Dashboards & Alerting (SLOs, DORA metrics)
+### Phase 7: Optimisation
+- HPA across services
+- Self-service platform for app teams
+- FinOps: cost controls, right-sizing, operational cost optimisation
+- Dashboards and alerting (SLOs, DORA metrics)
 
 ---
 
-## Platform Architecture & Technology Decisions
+## Platform Architecture and Technology Decisions
 
-### Target Platform Layer
+### Target Platform Layers
 
 ![Workload Classification](images/workloadclassification.jpg)
 
-The organisation moves to an **Azure-first platform** with clear layer assignments:
+Azure-first across the board:
 
 | Layer | Target |
 |---|---|
 | Compute | Azure Kubernetes Service (AKS) |
 | Data Pipelines | Azure Databricks |
-| Networking | Private Endpoints + VNet Integration |
+| Networking | Private Endpoints and VNet Integration |
 | CI/CD | GitHub Actions |
 | IaC | Pulumi or Terraform (org preference) |
 | Secrets | Azure Key Vault |
@@ -99,65 +94,64 @@ The organisation moves to an **Azure-first platform** with clear layer assignmen
 | Legacy Monoliths | Containerised and lifted | AKS |
 | Low Complexity Scripts | Scripts | Azure Container Apps |
 
-### Build vs Buy Decisions
+### Build vs Buy
 
 ![Build vs Buy](images/buildvsbuy.jpg)
 
-| Capability | Choice | Build/Buy/Adopt | Rationale |
+| Capability | Choice | Decision | Rationale |
 |---|---|---|---|
 | IaC Control Plane | Spacelift | Buy | Policy-as-code, drift detection, multi-stack RBAC, strong governance for regulated environments |
-| GitOps (AKS) | Argo CD | Adopt (open source) | Best-in-class declarative sync, drift detection, rollback |
-| Networking/Security | Cilium + Hubble | Adopt (open source) | eBPF-based zero-trust, sidecarless, best-in-class east-west visibility and scaling |
+| GitOps (AKS) | Argo CD | Adopt | Best-in-class declarative sync, drift detection, rollback |
+| Networking/Security | Cilium + Hubble | Adopt | eBPF-based zero-trust, sidecarless, best east-west visibility and scaling |
 | Observability | Azure Monitor + Grafana | Buy + Extend | Native Azure stack plus flexible visualisation |
 | Telemetry | OpenTelemetry | Adopt | Open standard; unified tracing, logging, and metrics |
-| Databricks Deployment | Databricks Asset Bundles (DAB) | Buy (Azure ecosystem) | Native CI/CD approach for Databricks |
+| Databricks Deployment | Databricks Asset Bundles | Buy | Native CI/CD approach, included in Azure ecosystem |
 | CI/CD | GitHub Actions / Azure DevOps | Buy either | GitHub Actions for OIDC-native flow; Azure DevOps for stricter approval/env/RBAC governance |
-| IaC Tooling | Pulumi vs Terraform | Pulumi (adopt) / Terraform (buy) | Pulumi enables TDD and inner-source dev; Terraform is a more mature provider ecosystem |
+| IaC Tooling | Pulumi vs Terraform | Pulumi (adopt) / Terraform (buy) | Pulumi enables TDD and inner-source dev; Terraform has a more mature provider ecosystem |
 
 ---
 
-## AKS Platform — Detailed Design
+## AKS Platform Design
 
 ### Network Architecture
 
 ![AKS Architecture](images/aks/aksarchitecturenetwork.jpg)
 
-The AKS platform runs across two Azure regions with a Hub & Spoke VNet topology:
+Hub and Spoke VNet topology across two Azure regions:
 
-- **Internet ingress** flows through Azure Front Door Premium + WAF (Edge TLS, health probes, failover)
-- **Corporate access** comes through VPN / Express Route
-- **Azure Private DNS Zone** (control plane) linked to each spoke VNet
-- **Each region** has its own Spoke VNet containing:
-  - AKS Cluster: Ingress/Gateway → Internal Load Balancer → Services (Cluster IP) → Pods
-  - Private Endpoints subnet: Key Vault PE, App Config PE
+- Internet traffic goes through Azure Front Door Premium and WAF (Edge TLS, health probes, failover)
+- Corporate access via VPN or Express Route
+- Azure Private DNS Zone (control plane) linked to each spoke VNet
+- Each region has its own Spoke VNet with an AKS cluster: Ingress/Gateway, Internal Load Balancer, Services (Cluster IP), Pods
+- Private Endpoints subnet per region for Key Vault and App Config
 
-### Separation of Concerns — IAC vs Service Deployment
+### Separation of Concerns: IaC vs Service Deployment
 
 ![IAC vs Service Deployment Strategy](images/aks/iacvsservicedeploymentstrategy.jpg)
 
-Two clear ownership boundaries are enforced:
+Two clear ownership boundaries:
 
-**Platform Engineering (IAC Monorepo)**
-- Owns: Pulumi/Terraform code for AKS clusters, VNet/Subnet, KV, App Config, Ingress, OIDC Identities, Argo CD, Cilium
-- Pipeline: Validate → Plan → Approval → Apply to Azure
+**Platform Engineering owns the IAC Monorepo**
+- Pulumi/Terraform for AKS clusters, VNet/Subnet, KV, App Config, Ingress, OIDC Identities, Argo CD, Cilium
+- Pipeline: Validate > Plan > Approval > Apply to Azure
 
-**Application Teams (Application Repo)**
-- Owns: Source code, Dockerfile, Kustomize manifests, deployment overlays
-- Pipeline: PR → Build → Test → Container Scan → Push to ACR → Update Kustomize tag → Commit to Deploy Repo → Argo CD syncs → AKS
+**Application Teams own their Application Repos**
+- Source code, Dockerfile, Kustomize manifests, deployment overlays
+- Pipeline: PR > Build > Test > Container Scan > Push to ACR > Update Kustomize tag > Commit to Deploy Repo > Argo CD > AKS
 
-Each service runs in its own namespace with Workload Identity scoped access to Key Vault and App Config.
+Each service gets its own namespace with Workload Identity scoped to Key Vault and App Config.
 
 ### Pipeline Flows
 
 ![IAC vs Service Deployment Pipeline Flow](images/aks/iacvsservicedeploymentpipelineflow.jpg)
 
-**IAC Pipeline:** `PR → Validate → Security Checks → Plan → Approve → Apply to Azure`
+**IaC pipeline:** PR > Validate > Security Checks > Plan > Approve > Apply to Azure
 
-**Service Deployment Pipeline:** `PR → Build → Test → Container Scan → Push to ACR → Deploy Repo → Argo CD → AKS`
+**Service deployment pipeline:** PR > Build > Test > Container Scan > Push to ACR > Deploy Repo > Argo CD > AKS
 
-Argo CD provides pull-based GitOps deployment with drift detection and rollback. Cilium enforces east-west network policy with deny-by-default and full visibility.
+Argo CD handles pull-based GitOps with drift detection and rollback. Cilium enforces east-west network policy with deny-by-default.
 
-**Repository Structure:**
+**Repo structure:**
 
 ```
 # IAC Monorepo
@@ -172,77 +166,76 @@ Argo CD provides pull-based GitOps deployment with drift detection and rollback.
 /deploy/overlays/dev   /deploy/overlays/stg   /deploy/overlays/prod
 ```
 
-### Detailed Build Sequence — AKS
+### AKS Build Sequence
 
-#### Phase 1 — Build Landing Zone
+#### Phase 1: Build Landing Zone
 
 ![Detailed Build Sequence Part 1](images/aks/detailedbuildsequencepart1.jpg)
 
-**Environment Model:** Separate Azure subscription, VNet, Key Vault, App Config, and AKS cluster per environment (Dev/Stg/Prod).
+Separate Azure subscription, VNet, Key Vault, App Config, and AKS cluster per environment (Dev/Stg/Prod).
 
-**Platform Monorepo First Release provisions:**
-resource groups, VNets & subnets, private DNS, ACR, Log Analytics / Azure Monitor, Key Vault, App Config, AKS clusters, User-Assigned Managed Identities (UAMI), GitOps bootstrap
+The Platform Monorepo first release provisions: resource groups, VNets and subnets, private DNS, ACR, Log Analytics, Azure Monitor, Key Vault, App Config, AKS clusters, User-Assigned Managed Identities, and GitOps bootstrap.
 
-**AKS Baseline:**
+AKS baseline:
 - OIDC issuer with Federated Identity (MS Entra Workload ID)
 - Autoscaler with separate system and workload node pools
 - Monitoring integration
-- Ingress / Gateway API Foundation
+- Ingress/Gateway API Foundation
 - Azure CNI powered by Cilium
 
-**Environment Differentiation:**
+Environment differences:
 
-| | Dev | Staging & Prod |
+| | Dev | Staging and Prod |
 |---|---|---|
 | Node pools | Smaller | Same topology |
 | HA | Lower | Full HA, zonal node pooling |
-| SKU | Cheaper choices | Prod-grade |
+| SKU | Cheaper | Prod-grade |
 | Cluster | Shared | Private cluster |
-| RBAC | Relaxed policies | Strict RBAC |
+| RBAC | Relaxed | Strict |
 | Ingress | Basic | Prod-grade edge path |
 
-#### Phase 2 — Bootstrap GitOps
+#### Phase 2: Bootstrap GitOps
 
 - Install Argo CD on each cluster from the Platform Monorepo
 - Create base namespaces and shared platform services
-- Define cluster add-ons as Git-managed resources: ingress/gateway, cert handling, external secrets, policy agents, observability agents
+- Define cluster add-ons as Git-managed: ingress/gateway, cert handling, external secrets, policy agents, observability agents
 
-**Split of Responsibility:**
+Who owns what:
 
 | Repo | Responsibility |
 |---|---|
 | Platform Repo | Creates clusters |
-| GitOps (Argo CD) | Installs cluster-level shared services |
+| Argo CD | Installs cluster-level shared services |
 | Application Repos | Publish deployable artifacts |
 | Cluster Config Repo | Decides what version runs where |
 
-#### Phase 3 — Standardise Build Pipeline (25+ Repos)
+#### Phase 3: Standardise Build Pipeline (25+ Repos)
 
-For every application repository, add:
+For every app repo, add:
 - PR validation, linting, unit tests
 - Container build, image scanning, artifact versioning
 - Publish to ACR, package Kustomize bundle
 
-> GitOps consumes the built image tag from Git — not from a manual deployment action.
+> GitOps picks up the image tag from Git, not from a manual deployment trigger.
 
-#### Phases 4–7 — Workload Migration Waves
+#### Phases 4-7: Workload Migration Waves
 
 ![Detailed Build Sequence Part 2](images/aks/detailedbuildsequencepart2.jpg)
 
 | Wave | Workload Type | Steps |
 |---|---|---|
-| **Wave 1** | Stateless low-risk APIs & workers | Containerise, externalise config, move secrets to KV via KSM, define k8s Deployment + Service, deploy dev → validate stg → promote prod |
-| **Wave 2** | Scheduled jobs & on-prem schedulers | Isolate job logic, containerise, create CronJob spec, define concurrency & retry, add metrics/alerting, deploy via GitOps |
-| **Wave 3** | Existing Container Instances & mixed compute | Compare runtime assumptions, move to standard base image, migrate deployment spec to Kustomize |
-| **Wave 4** | Legacy / awkward workloads | Code refactoring where needed, transitional hybrid connectivity |
+| Wave 1 | Stateless low-risk APIs and workers | Containerise, externalise config, move secrets to KV via KSM, define k8s Deployment and Service, deploy dev > validate stg > promote prod |
+| Wave 2 | Scheduled jobs and on-prem schedulers | Isolate job logic, containerise, create CronJob spec, define concurrency and retry, add metrics/alerting, deploy via GitOps |
+| Wave 3 | Existing Container Instances and mixed compute | Compare runtime assumptions, move to standard base image, migrate deployment spec to Kustomize |
+| Wave 4 | Legacy and awkward workloads | Refactor where needed, transitional hybrid connectivity |
 
-**Environment Promotion Model:**
+Environment promotion:
 
 | Environment | Behaviour |
 |---|---|
-| Dev | Rapid integration, frequent deploy, tests packaging & runtime model. Auto-sync on merge to main |
-| Staging | Prod-like verification, smoke tests, dependency validation. Promotes same immutable artifact — no rebuild |
-| Prod | Manual approval gate in Git. GitOps reconciles. Progressive strategy: rolling / canary / blue-green based on commit type |
+| Dev | Rapid integration, frequent deploys, tests packaging and runtime model. Auto-syncs on merge to main |
+| Staging | Prod-like verification, smoke tests, dependency validation. Same immutable artifact, no rebuild |
+| Prod | Manual approval gate in Git. GitOps reconciles. Strategy (rolling/canary/blue-green) driven by commit type |
 
 ---
 
@@ -250,24 +243,23 @@ For every application repository, add:
 
 ![Generic Deployment Lifecycle](images/lifecycle.jpg)
 
-Applies to all workloads (AKS services and Databricks pipelines):
+Same flow for all workloads — AKS services and Databricks pipelines.
 
-**On a branch (PR):**
-- Run tests, linting, build image — do not deploy
+On a branch (PR): run tests, linting, build image. Don't deploy.
 
-**On PR approval:**
+On PR approval:
 1. Lint/schema validation passed
 2. Static vulnerability scanning passed
 3. Unit tests passed
 4. Component tests passed
 
-**On merge to `main`:**
+On merge to `main`:
 1. Version calculated via Conventional Commits
 2. Immutable artifact built
-3. Tagged (e.g., `v1.4.2`)
+3. Tagged (e.g. `v1.4.2`)
 4. Artifact published to ACR / package registry / bundle store
 
-**Deployment flow:** `DEV (single region, integration tests)` → `Staging Secondary` → `Staging Primary (integration tests)` → `manual approval gate` → `Prod Secondary` → `Prod Primary`
+Deployment flow: DEV (single region, integration tests) > Staging Secondary > Staging Primary (integration tests) > manual approval gate > Prod Secondary > Prod Primary
 
 ---
 
@@ -275,53 +267,50 @@ Applies to all workloads (AKS services and Databricks pipelines):
 
 ![Deployment Strategy](images/deploymentstrategy.jpg)
 
-### Application Services (AKS)
+### Application Services on AKS
 
 | Scenario | Strategy |
 |---|---|
-| Non-breaking change | **Rolling Update** — readiness/liveness probes, gradual pod replacement |
-| Breaking / high-risk change | **Blue/Green** — deploy to green (namespace or cluster), validate, switch traffic via AFD/App Gateway |
-| Breaking / medium-low risk | **Canary** — traffic shift: 5% → 20% → 50% → 100% |
+| Non-breaking change | Rolling Update (readiness/liveness probes, gradual pod replacement) |
+| Breaking or high-risk change | Blue/Green (deploy to green namespace or cluster, validate, switch traffic via AFD/App Gateway) |
+| Breaking, medium-low risk | Canary (traffic shift: 5% > 20% > 50% > 100%) |
 
-### Batch Jobs & Databricks Pipelines
+### Batch Jobs and Databricks Pipelines
 
 | Scenario | Strategy |
 |---|---|
-| Non-breaking change | **Replace Version** — update CronJob/job definition, new run = new version |
-| Breaking change | **Parallel Run (v1 + v2)** — same input, compare output, then switch scheduler to v2 |
+| Non-breaking change | Replace version (update CronJob/job definition, new run = new version) |
+| Breaking change | Parallel run v1 and v2 (same input, compare output, switch scheduler to v2) |
 
-### Universal — Applies to All Deployments
-
-- **Observability & Governance:** OpenTelemetry / Azure Monitor for error and latency, Logs/Metrics/Alerts, DORA Metrics, Feature Flags via App Config
+Across all deployments: OpenTelemetry and Azure Monitor for error/latency, logs/metrics/alerts, DORA metrics, feature flags via App Config.
 
 ---
 
-## Databricks — Detailed Design
+## Databricks Design
 
-### Architecture & Ownership
+### Architecture and Ownership
 
 ![Databricks Architecture](images/databricks/databricksarchitectureownership.jpg)
 
-**Databricks Control Plane (Managed SaaS):**
-Workspace UI, Jobs UI & Scheduler, Notebooks/Repos, REST API, Metadata & Orchestration — connected via Private Link / SCC / TLS.
+The Databricks Control Plane is managed SaaS (Workspace UI, Jobs, Notebooks, REST API, Metadata and Orchestration), connected via Private Link / SCC / TLS.
 
-**Azure Subscription (Organisation-owned) per environment (Dev/Stg/Prod):**
-- VNet with Databricks subnets (VNet Injection): Driver VM, Worker VMs, Spark Job execution
+The Azure subscription (org-owned) per environment (Dev/Stg/Prod) contains:
+- VNet with Databricks subnets via VNet Injection (Driver VM, Worker VMs, Spark job execution)
 - NAT Gateway / Firewall for controlled egress
-- Data & Service Layer: ADLS/Blob, Cosmos/SQL, Key Vault, event streaming — all accessed via Private Endpoints, RBAC, and Managed Identities
+- Data and service layer: ADLS/Blob, Cosmos/SQL, Key Vault, event streaming — all accessed via Private Endpoints, RBAC, and Managed Identities
 
-**Ownership split:**
+Ownership split:
 
 | Owner | Owns |
 |---|---|
 | Application Repos | Notebooks, Jobs, Pipeline code, Scheduling logic |
 | IAC Monorepo | Workspace creation, VNet subnets, private endpoints, NAT/firewall, cluster policies, security baselines |
 
-### Developer Workspace
+### Developer Workflow
 
 ![Databricks CI/CD Workspace](images/databricks/databrickscicdworkspace.jpg)
 
-Developers (Python / Notebooks / SQL) commit code into a Git repository structured as:
+Developers (Python / Notebooks / SQL) work from a Git repo structured as:
 
 ```
 /src             # pipeline code
@@ -329,94 +318,88 @@ Developers (Python / Notebooks / SQL) commit code into a Git repository structur
 databricks.yml   # Databricks Asset Bundle (DAB) definition
 ```
 
-**Databricks Execution Model in Azure:**
-`Workspace [Dev|Stg|Prd]` → `Databricks Job (defined by DAB)` → `Spark Cluster (Driver + Worker VMs)` → `ADLS / Delta Tables (Curated Data Outputs)`
+Execution in Azure: Workspace (Dev/Stg/Prd) > Databricks Job (defined by DAB) > Spark Cluster (Driver and Worker VMs) > ADLS / Delta Tables (curated outputs)
 
-### Databricks Automation — Detailed Project Plan
+### Databricks Project Plan
 
 ![Databricks Project Plan](images/databricks/databricksprojectplan.jpg)
 
-#### Phase 1 — Foundation
+#### Phase 1: Foundation
 - Create IAC repo: Databricks workspace (Dev first), cluster policies, RBAC access model
 - Stand up Dev environment
-- Define repository strategy: split repos per domain/workload
-- Introduce basic CI pipeline: linting & unit tests for pipeline code
-- Implement manual-triggered deployment to Databricks via CI
-- Baseline monitoring & logging
+- Define repo strategy: split per domain/workload
+- Basic CI pipeline: linting and unit tests for pipeline code
+- Manual-triggered deployment to Databricks via CI
+- Baseline monitoring and logging
 
-#### Phase 2 — Promotion
-- Expand IAC to Staging & Prod
+#### Phase 2: Promotion
+- Expand IAC to Staging and Prod
 - Introduce approval gates
-- Artifact-based deployment using **Databricks Asset Bundles**
+- Artifact-based deployment using Databricks Asset Bundles
 - Standardise job configuration templates and cluster usage patterns
 - Integration testing in Staging
 - Secrets management via Key Vault integration
 
-#### Phase 3 — Scale
-- Rollback and canary deployment strategy for pipelines
+#### Phase 3: Scale
+- Rollback and canary deployment for pipelines
 - Mass migration of all 40+ jobs
-- Begin decommissioning of legacy manual processes
+- Begin decommissioning legacy manual processes
 
-### IAC Pipeline for Databricks Workspaces
+### IaC Pipeline for Databricks Workspaces
 
 ![Databricks IAC](images/databricks/databricksiac.jpg)
 
-The Platform Engineering team owns a central IAC Monorepo that defines:
-- Databricks workspace configuration
-- Cluster policies, access/RBAC
-- Networking/secrets, environment baselines
+Platform Engineering owns the central IAC Monorepo which defines: workspace config, cluster policies, access/RBAC, networking/secrets, and environment baselines.
 
-**Flow:** IAC Monorepo → IAC Pipeline (validate/plan/apply) → Dev workspace base → Staging (promoted base) → *(approval gateway)* → Prod (stable base)
+Flow: IAC Monorepo > IAC Pipeline (validate/plan/apply) > Dev workspace > Staging (promoted base) > approval gate > Prod (stable base)
 
-All environments governed by Central Governance approvals and policy.
+All environments governed by central governance approvals and policy.
 
-### Application CI/CD Pipeline for Databricks
+### Application CI/CD Pipeline
 
 ![Databricks Application CI/CD](images/databricks/databricksapplicationcicd.jpg)
-
-**Pipeline Flow:**
 
 ```
 Git Repo (App Team CodeOwners)
   pipeline code + tests + databricks.yml
-        │
-        ▼
-PR Pipeline: lint → unit test (pytest) → bundle validation
-        │
-        ▼
-Merge to main: version & release bundle produced
-        │
-        ▼
-Deploy bundle to Dev → run job → smoke test output
-        │                    │
-        │         Automated ephemeral Job Clusters
-        │         (end-to-end validation, Dev/Stg workspace)
-        ▼
-Deploy to Staging → smoke test in Staging
-        │
-        ▼ approval gateway
-Deploy to Prod → Monitor
+        |
+        v
+PR Pipeline: lint > unit test (pytest) > bundle validation
+        |
+        v
+Merge to main: version and release bundle produced
+        |
+        v
+Deploy bundle to Dev > run job > smoke test output
+        |                    |
+        |         Automated ephemeral Job Clusters
+        |         (end-to-end validation, Dev/Stg workspace)
+        v
+Deploy to Staging > smoke test in Staging
+        |
+        v  approval gate
+Deploy to Prod > Monitor
 ```
 
 ---
 
-## Appendix — Architecture Diagrams
+## Appendix
 
 | Diagram | Link |
 |---|---|
 | Migration Operating Model | [View](images/majorstreamoperatingmodel.jpg) |
 | Programme Roadmap | [View](images/productroadmap.jpg) |
-| Workload Classification & Platform Layers | [View](images/workloadclassification.jpg) |
+| Workload Classification and Platform Layers | [View](images/workloadclassification.jpg) |
 | Generic Deployment Lifecycle | [View](images/lifecycle.jpg) |
 | AKS Network Architecture | [View](images/aks/aksarchitecturenetwork.jpg) |
-| IAC vs Service Deployment Strategy | [View](images/aks/iacvsservicedeploymentstrategy.jpg) |
-| IAC vs Service Deployment Pipeline Flow | [View](images/aks/iacvsservicedeploymentpipelineflow.jpg) |
-| Detailed Build Sequence — Part 1 (Phases 1–3) | [View](images/aks/detailedbuildsequencepart1.jpg) |
-| Detailed Build Sequence — Part 2 (Phases 4–7) | [View](images/aks/detailedbuildsequencepart2.jpg) |
+| IaC vs Service Deployment Strategy | [View](images/aks/iacvsservicedeploymentstrategy.jpg) |
+| IaC vs Service Deployment Pipeline Flow | [View](images/aks/iacvsservicedeploymentpipelineflow.jpg) |
+| Detailed Build Sequence Part 1 (Phases 1-3) | [View](images/aks/detailedbuildsequencepart1.jpg) |
+| Detailed Build Sequence Part 2 (Phases 4-7) | [View](images/aks/detailedbuildsequencepart2.jpg) |
 | Deployment Strategy | [View](images/deploymentstrategy.jpg) |
 | Build vs Buy | [View](images/buildvsbuy.jpg) |
-| Databricks Architecture & Ownership | [View](images/databricks/databricksarchitectureownership.jpg) |
+| Databricks Architecture and Ownership | [View](images/databricks/databricksarchitectureownership.jpg) |
 | Databricks CI/CD Workspace | [View](images/databricks/databrickscicdworkspace.jpg) |
 | Databricks Project Plan | [View](images/databricks/databricksprojectplan.jpg) |
-| Databricks IAC Pipeline | [View](images/databricks/databricksiac.jpg) |
+| Databricks IaC Pipeline | [View](images/databricks/databricksiac.jpg) |
 | Databricks Application CI/CD Pipeline | [View](images/databricks/databricksapplicationcicd.jpg) |

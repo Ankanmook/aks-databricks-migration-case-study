@@ -22,9 +22,9 @@ The migration is organised into three sequential operating streams, each deliver
 
 | Stream | Goal |
 |---|---|
-| **1 — Platform Foundation** | Build Dev/Stg/Prod environments and a GitOps backbone on AKS |
-| **2 — Databricks Automation** | Eliminate manual uploads and establish a data pipeline release process for all 40+ jobs |
-| **3 — Workload Migration** | Move applications in waves from on-prem / mixed compute to AKS |
+| **Platform Foundation** | Build Dev/Stg/Prod environments and a GitOps backbone on AKS |
+| **Databricks Automation** | Eliminate manual uploads and establish a data pipeline release process for all 40+ jobs |
+| **Workload Migration** | Move applications in waves from on-prem / mixed compute to AKS |
 
 ---
 

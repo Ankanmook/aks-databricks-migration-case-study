@@ -40,7 +40,7 @@ These whiteboard presentations illustrate the operating model for migrating work
 - [Detailed Proposal Plan for Databricks Migration](images/databricks/databricksprojectplan.jpg)
 - [Architecture Diagram DatabricksProjectPlan](images/databricks/databricksarchitectureownership.jpg)
 - [Separation of Concerns for IAC vs Service Deployment](images/databricks/databricksiacvsservicedeploymentstrategy.jpg)
-- [Databricks CI/CD Pipeline for Application Repositories](images/databricks/databricksiacvsservicedeploymentpipelineflow.jpg)
+- [Databricks CI/CD Pipeline for Application Repositories](images/databricks/databricksiac.jpg)
 - [Databricks CI/CD Workspace](images/databricks/databrickscicdworkspace.jpg)
 
 ### Conclusion

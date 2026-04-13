@@ -108,6 +108,7 @@ Azure-first across the board:
 | Databricks Deployment | Databricks Asset Bundles | Buy | Native CI/CD approach, included in Azure ecosystem |
 | CI/CD | GitHub Actions / Azure DevOps | Buy either | GitHub Actions for OIDC-native flow; Azure DevOps for stricter approval/env/RBAC governance |
 | IaC Tooling | Pulumi vs Terraform | Pulumi (adopt) / Terraform (buy) | Pulumi enables TDD and inner-source dev; Terraform has a more mature provider ecosystem |
+| Deployment Templating | Kustomize vs Helm | Kustomize (default) / Helm (3rd-party only) | Kustomize keeps manifests declarative and GitOps-friendly; Helm introduces templating complexity and drift risk—best reserved for vendor charts, not internal workloads
 
 ---
 
